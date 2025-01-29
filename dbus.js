@@ -211,19 +211,11 @@ const SpTrayDbus = class SpTrayDbus {
             "g-properties-changed",
             (proxy, changed, invalidated) => {
                 const props = changed.deepUnpack();
-                // TODO simplify this mess
-                if (
-                    !(
-                        "PlaybackStatus" in props ||
-                        "Metadata" in props ||
-                        "LoopStatus" in props ||
-                        "Shuffle" in props
-                    )
+                if ("PlaybackStatus" in props || "Metadata" in props
+                    || "LoopStatus" in props || "Shuffle" in props
                 ) {
-                    // None of the extension-relevant properties changed, nothing to do
-                    return;
+                    this.panelButton.updateLabel("Metadata" in props);
                 }
-                this.panelButton.updateLabel("Metadata" in props);
                 return;
             },
         );
@@ -305,7 +297,7 @@ const SpTrayDbus = class SpTrayDbus {
     }
 
     getPlaybackControl() {
-        if (!this.proxy || !this.proxy.Shuffle || !this.proxy.LoopStatus) {
+        if (!this.proxy) {
             return null;
         }
         return {
