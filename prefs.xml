@@ -26,9 +26,15 @@
     </object>
 
     <object class="GtkAdjustment" id="marquee-interval-adj">
-        <property name="lower">100</property>
+        <property name="lower">50</property>
         <property name="upper">20000</property>
         <property name="step_increment">50</property>
+    </object>
+
+    <object class="GtkAdjustment" id="marquee-repeats-adj">
+        <property name="lower">1</property>
+        <property name="upper">10</property>
+        <property name="step_increment">1</property>
     </object>
 
     <object class="GtkBox" id="prefs_widget">
@@ -432,6 +438,36 @@
                         <property name="margin-start">12</property>
                         <child>
                             <object class="GtkLabel">
+                                <property name="label" translatable="yes">Marquee repeats</property>
+                                <property name="hexpand">true</property>
+                                <property name="halign">1</property>
+                            </object>
+                        </child>
+                        <child>
+                            <object class="GtkSpinButton" id="marquee_repeats">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="adjustment">marquee-repeats-adj</property>
+                            </object>
+                        </child>
+                        <child>
+                            <object class="GtkButton" id="resetMarqueeRepeats">
+                                <property name="label">↺</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">True</property>
+                                <signal name="clicked" handler="on_resetMarqueeRepeats_clicked" swapped="no" />
+                            </object>
+                        </child>
+                    </object>
+                </child>
+
+                <child>
+                    <object class="GtkBox">
+                        <property name="spacing">12</property>
+                        <property name="margin-start">12</property>
+                        <child>
+                            <object class="GtkLabel">
                                 <property name="label" translatable="yes">Marquee separator</property>
                                 <property name="hexpand">true</property>
                                 <property name="halign">1</property>
@@ -482,43 +518,6 @@
                     </object>
                 </child>
 
-                <child>
-                    <object class="GtkBox">
-                        <property name="spacing">12</property>
-                        <property name="margin-start">12</property>
-                        <child>
-                            <object class="GtkLabel">
-                                <property name="label" translatable="yes">Spotify is inactive</property>
-                                <property name="hexpand">true</property>
-                                <property name="halign">1</property>
-                            </object>
-                        </child>
-                        <child>
-                            <object class="GtkEntry" id="field_notRunning">
-                                <property name="max_length">25</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="show_emoji_icon">True</property>
-                            </object>
-                        </child>
-                        <child>
-                            <object class="GtkButton" id="resetNotRunning">
-                                <property name="label">↺</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="receives_default">True</property>
-                                <signal name="clicked" handler="on_resetNotRunning_clicked" swapped="no" />
-                            </object>
-                        </child>
-                    </object>
-                </child>
-
-                <child>
-                    <object class="GtkSeparator">
-                        <property name="orientation">horizontal</property>
-                    </object>
-                </child>
-
                 <!-- Controls for what to show when playback is paused -->
                 <child>
                     <object class="GtkBox">
@@ -558,43 +557,6 @@
                     </object>
                 </child>
 
-                <child>
-                    <object class="GtkBox">
-                        <property name="spacing">12</property>
-                        <property name="margin-start">12</property>
-                        <child>
-                            <object class="GtkLabel">
-                                <property name="label" translatable="yes">Paused</property>
-                                <property name="hexpand">true</property>
-                                <property name="halign">1</property>
-                            </object>
-                        </child>
-                        <child>
-                            <object class="GtkEntry" id="field_paused">
-                                <property name="max_length">25</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="show_emoji_icon">True</property>
-                            </object>
-                        </child>
-                        <child>
-                            <object class="GtkButton" id="resetPaused">
-                                <property name="label">↺</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="receives_default">True</property>
-                                <signal name="clicked" handler="on_resetPaused_clicked" swapped="no" />
-                            </object>
-                        </child>
-                    </object>
-                </child>
-
-                <child>
-                    <object class="GtkSeparator">
-                        <property name="orientation">horizontal</property>
-                    </object>
-                </child>
-
                 <!-- Controls for what to show when playback is stopped -->
                 <child>
                     <object class="GtkBox">
@@ -616,157 +578,11 @@
                 </child>
 
                 <child>
-                    <object class="GtkBox">
-                        <property name="spacing">12</property>
-                        <property name="margin-start">12</property>
-                        <child>
-                            <object class="GtkLabel">
-                                <property name="label" translatable="yes">Stopped</property>
-                                <property name="hexpand">true</property>
-                                <property name="halign">1</property>
-                            </object>
-                        </child>
-                        <child>
-                            <object class="GtkEntry" id="field_stopped">
-                                <property name="max_length">25</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="show_emoji_icon">True</property>
-                            </object>
-                        </child>
-                        <child>
-                            <object class="GtkButton" id="resetStopped">
-                                <property name="label">↺</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="receives_default">True</property>
-                                <signal name="clicked" handler="on_resetStopped_clicked" swapped="no" />
-                            </object>
-                        </child>
-                    </object>
-                </child>
-
-                <child>
                     <object class="GtkSeparator">
                         <property name="orientation">horizontal</property>
                     </object>
                 </child>
-
-                <!-- Loop and shuffle settings-->
-
-                <child>
-                    <object class="GtkBox">
-                        <property name="spacing">12</property>
-                        <property name="margin-start">12</property>
-                        <child>
-                            <object class="GtkLabel">
-                                <property name="label" translatable="yes">Loop and shuffle indicators</property>
-                                <property name="hexpand">true</property>
-                                <property name="halign">1</property>
-                            </object>
-                        </child>
-                    </object>
-                </child>
-
-                <child>
-                    <object class="GtkBox">
-                        <property name="spacing">12</property>
-                        <property name="margin-start">12</property>
-                        <child>
-                            <object class="GtkLabel">
-                                <property name="label" translatable="yes">Shuffle</property>
-                                <property name="hexpand">true</property>
-                                <property name="halign">1</property>
-                            </object>
-                        </child>
-                        <child>
-                            <object class="GtkEntry" id="shuffle">
-                                <property name="max_length">25</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="show_emoji_icon">True</property>
-                            </object>
-                        </child>
-                        <child>
-                            <object class="GtkButton" id="resetShuffle">
-                                <property name="label">↺</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="receives_default">True</property>
-                                <signal name="clicked" handler="on_resetShuffle_clicked" swapped="no" />
-                            </object>
-                        </child>
-                    </object>
-                </child>
-
-                <child>
-                    <object class="GtkBox">
-                        <property name="spacing">12</property>
-                        <property name="margin-start">12</property>
-                        <child>
-                            <object class="GtkLabel">
-                                <property name="label" translatable="yes">Loop playlist</property>
-                                <property name="hexpand">true</property>
-                                <property name="halign">1</property>
-                            </object>
-                        </child>
-                        <child>
-                            <object class="GtkEntry" id="loopPlaylist">
-                                <property name="max_length">25</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="show_emoji_icon">True</property>
-                            </object>
-                        </child>
-                        <child>
-                            <object class="GtkButton" id="resetLoopPlaylist">
-                                <property name="label">↺</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="receives_default">True</property>
-                                <signal name="clicked" handler="on_resetLoopPlaylist_clicked" swapped="no" />
-                            </object>
-                        </child>
-                    </object>
-                </child>
-
-                <child>
-                    <object class="GtkBox">
-                        <property name="spacing">12</property>
-                        <property name="margin-start">12</property>
-                        <child>
-                            <object class="GtkLabel">
-                                <property name="label" translatable="yes">Loop track</property>
-                                <property name="hexpand">true</property>
-                                <property name="halign">1</property>
-                            </object>
-                        </child>
-                        <child>
-                            <object class="GtkEntry" id="loopTrack">
-                                <property name="max_length">25</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="show_emoji_icon">True</property>
-                            </object>
-                        </child>
-                        <child>
-                            <object class="GtkButton" id="resetTrack">
-                                <property name="label">↺</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="receives_default">True</property>
-                                <signal name="clicked" handler="on_resetLoopTrack_clicked" swapped="no" />
-                            </object>
-                        </child>
-                    </object>
-                </child>
-
-                <child>
-                    <object class="GtkSeparator">
-                        <property name="orientation">horizontal</property>
-                    </object>
-                </child>
-
+                
                 <!-- position control -->
 
                 <child>

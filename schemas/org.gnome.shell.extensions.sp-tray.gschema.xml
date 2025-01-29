@@ -25,24 +25,6 @@ along with this program.If not, see < http://www.gnu.org/licenses/>. -->
             <description>the default icon that's briefly displayed as the extension starts</description>
         </key>
 
-        <key type="s" name="paused">
-            <default>"⏸️"</default>
-            <summary>paused icon</summary>
-            <description>the display text to indicate playback is paused</description>
-        </key>
-
-        <key type="s" name="stopped">
-            <default>"⏹️"</default>
-            <summary>stopped icon</summary>
-            <description>the display text to indicate playback is stopped</description>
-        </key>
-
-        <key type="s" name="off">
-            <default>"💤️"</default>
-            <summary>off icon</summary>
-            <description>the display text to indicate spotify is not running</description>
-        </key>
-
         <key type="s" name="display-format">
             <default>"{artist} | {track}"</default>
             <summary>how the track info is displayed</summary>
@@ -128,19 +110,10 @@ along with this program.If not, see < http://www.gnu.org/licenses/>. -->
             <range min="100" max="20000" />
         </key>
 
-        <key type="s" name="shuffle">
-            <default>"🔀️"</default>
-            <summary>the icon that shows playback is in shuffle mode</summary>
-        </key>
-
-        <key type="s" name="loop-track">
-            <default>"🔂"</default>
-            <summary>the icon that shows playback is in track loop mode</summary>
-        </key>
-
-        <key type="s" name="loop-playlist">
-            <default>"🔁"</default>
-            <summary>the icon that shows playback is in playlist loop mode</summary>
+        <key type="i" name="marquee-repeats">
+            <default>2</default>
+            <summary>Marquee repeats</summary>
+            <range min="1" max="10" />
         </key>
 
     </schema>

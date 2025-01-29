@@ -11,30 +11,6 @@ const settingsFields = [
     }
     */
     {
-        setting: "paused",
-        fieldId: "field_paused",
-        type: "text",
-        resettable: true,
-        resetCallback: "on_resetPaused_clicked",
-        restartsAnimation: false,
-    },
-    {
-        setting: "stopped",
-        fieldId: "field_stopped",
-        type: "text",
-        resettable: true,
-        resetCallback: "on_resetStopped_clicked",
-        restartsAnimation: true,
-    },
-    {
-        setting: "off",
-        fieldId: "field_notRunning",
-        type: "text",
-        resettable: true,
-        resetCallback: "on_resetNotRunning_clicked",
-        restartsAnimation: true,
-    },
-    {
         setting: "display-format",
         fieldId: "field_format",
         type: "text",
@@ -137,30 +113,6 @@ const settingsFields = [
         restartsAnimation: true,
     },
     {
-        setting: "shuffle",
-        fieldId: "shuffle",
-        type: "text",
-        resettable: true,
-        resetCallback: "on_resetShuffle_clicked",
-        restartsAnimation: false,
-    },
-    {
-        setting: "loop-track",
-        fieldId: "loopTrack",
-        type: "text",
-        resettable: true,
-        resetCallback: "on_resetLoopTrack_clicked",
-        restartsAnimation: false,
-    },
-    {
-        setting: "loop-playlist",
-        fieldId: "loopPlaylist",
-        type: "text",
-        resettable: true,
-        resetCallback: "on_resetLoopPlaylist_clicked",
-        restartsAnimation: false,
-    },
-    {
         setting: "marquee-tail",
         fieldId: "marquee_tail",
         type: "text",
@@ -176,6 +128,14 @@ const settingsFields = [
         resetCallback: "on_resetMarqueeInterval_clicked",
         restartsAnimation: false,
     },
+    {
+        setting: "marquee-repeats",
+        fieldId: "marquee_repeats",
+        type: "value",
+        resettable: true,
+        resetCallback: "on_resetMarqueeRepeats_clicked",
+        restartsAnimation: true,
+    }
 ];
 
 export default settingsFields;
