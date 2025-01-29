@@ -43,6 +43,7 @@ const marqueeTextGenerator = function* (label) {
 const SpTrayButton = GObject.registerClass(
     { GTypeName: "SpTrayButton" },
     class SpTrayButton extends PanelMenu.Button {
+
         _init() {
             this.extensionObject = Extension.lookupByUUID("sp-tray@sp-tray.esenliyim.github.com");
             super._init(null, this.extensionObject.metadata.name);
@@ -89,23 +90,49 @@ const SpTrayButton = GObject.registerClass(
             });
             this.ui.set("box", box);
 
-            // TODO mess with css to see if I can stop the label from jumping slightly left and right while marquee is on
             this.ui.set("label", this.makeLabel());
 
             this.ui.set(
                 "pausedState",
-                new St.Label({
-                    text: this.settings.get_string("paused"),
+                new St.Icon({
+                    icon_name: "media-playback-pause-symbolic",
+                    icon_size: 16,
                     visible: false,
                     y_align: Clutter.ActorAlign.CENTER,
-                }),
+                })
             );
+
+            this.ui.set(
+                "shuffleState",
+                new St.Icon({
+                    icon_name: "media-playlist-shuffle-symbolic",
+                    icon_size: 16,
+                    visible: false,
+                    y_align: Clutter.ActorAlign.CENTER,
+                })
+            );
+
+            this.ui.set(
+                "repeatState",
+                new St.Icon({
+                    icon_name: "media-playlist-repeat-symbolic",
+                    icon_size: 16,
+                    visible: false,
+                    y_align: Clutter.ActorAlign.CENTER,
+                })
+            );
+
             this.ui.set("icon", this.makeIcon());
+
             this._handleLogoDisplay();
 
             this._signals.push(this.connect("button-press-event", this.showSpotify.bind(this)));
 
             this.add_child(box);
+        }
+
+        _initDbus() {
+            this.dbus = new SpTrayDbus(this);
         }
 
         makeLabel() {
@@ -162,10 +189,6 @@ const SpTrayButton = GObject.registerClass(
             }
         }
 
-        _initDbus() {
-            this.dbus = new SpTrayDbus(this);
-        }
-
         // if the spotify logo is to be shown, insert it where appropriate (sounded better in my head)
         _handleLogoDisplay() {
             let box = this.ui.get("box");
@@ -175,16 +198,22 @@ const SpTrayButton = GObject.registerClass(
                     box.add_child(this.ui.get("icon"));
                     box.add_child(this.ui.get("pausedState"));
                     box.add_child(this.ui.get("label"));
+                    box.add_child(this.ui.get("shuffleState"));
+                    box.add_child(this.ui.get("repeatState"));
                     break;
                 case constants.logoPosition.RIGHT:
                     box.add_child(this.ui.get("pausedState"));
                     box.add_child(this.ui.get("label"));
+                    box.add_child(this.ui.get("shuffleState"));
+                    box.add_child(this.ui.get("repeatState"));
                     box.add_child(this.ui.get("icon"));
                     break;
                 case constants.logoPosition.NONE:
                 default:
                     box.add_child(this.ui.get("pausedState"));
                     box.add_child(this.ui.get("label"));
+                    box.add_child(this.ui.get("shuffleState"));
+                    box.add_child(this.ui.get("repeatState"));
                     break;
             }
         }
@@ -202,23 +231,66 @@ const SpTrayButton = GObject.registerClass(
             );
         }
 
-        _setMarqueeStyle(length) {
-            this.ui.get("label").set_style(`width: ${length / 2}em;`);
+        // update the text on the tray display
+        updateLabel(shouldRestart = true) {
+            if (!this.dbus.spotifyIsActive()) {
+                this.showInactive();
+                return;
+            }
+            switch (this.dbus.getPlaybackStatus()) {
+                case "Playing":
+                    this.showPlaying(this.dbus.extractMetadataInformation(), shouldRestart);
+                    break;
+                case "Paused":
+                    this.showPaused(this.dbus.extractMetadataInformation(), shouldRestart);
+                    break;
+                case "Stopped":
+                default:
+                    this.showStopped();
+                    break;
+            }
+            const controls = this.dbus.getPlaybackControl();
+            if (controls) {
+                if (controls.shuffle) {
+                    this.ui.get("shuffleState").visible = true;
+                }
+                else {
+                    this.ui.get("shuffleState").visible = false;
+                }
+                if (controls.loop && controls.loop === "Playlist") {
+                    this.ui.get("repeatState").icon_name = "media-playlist-repeat-symbolic";
+                    this.ui.get("repeatState").visible = true;
+                }
+                else if (controls.loop && controls.loop === "Track") {
+                    this.ui.get("repeatState").icon_name = "media-playlist-repeat-song-symbolic";
+                    this.ui.get("repeatState").visible = true;
+                }
+                else if (controls.loop && controls.loop === "None") {
+                    this.ui.get("repeatState").visible = false;
+                }
+            }
         }
 
-        destroy() {
-            // disconnect all signals
-            this._settingSignals.forEach((signal) => {
-                this.settings.disconnect(signal);
-            });
-            this._signals.forEach((signal) => {
-                this.disconnect(signal);
-            });
-            // destroy all ui elements
-            this.ui.get("box").destroy();
-            this.dbus.destroy();
-            if (this.marqueeTimeoutId) GLib.Source.remove(this.marqueeTimeoutId);
-            super.destroy();
+        showInactive() {
+            if (this.settings.get_boolean("hidden-when-inactive")) {
+                this.visible = false;
+            } else {
+                this.visible = true;
+                const pbStat = this.ui.get("pausedState");
+                pbStat.icon_name = "media-playback-stop-symbolic";
+                pbStat.visible = true;
+                const button = this.ui.get("label");
+                button.visible = false;
+            }
+            this._stopMarquee();
+        }
+
+        showPlaying(metadata, shouldRestart = false) {
+            this.visible = true;
+            this.ui.get("label").visible = true;
+            const pbStat = this.ui.get("pausedState");
+            pbStat.visible = false;
+            this._updateText(metadata, shouldRestart);
         }
 
         showPaused(metadata, shouldRestart = false) {
@@ -227,12 +299,9 @@ const SpTrayButton = GObject.registerClass(
                 return;
             } else {
                 this.visible = true;
-                let paused_text = this.settings.get_string("paused");
-                if (paused_text.trim() !== "") {
-                    const pbStat = this.ui.get("pausedState");
-                    pbStat.text = paused_text;
-                    pbStat.visible = true;
-                }
+                const pbStat = this.ui.get("pausedState");
+                pbStat.icon_name = "media-playback-pause-symbolic";
+                pbStat.visible = true;
                 if (this.settings.get_boolean("metadata-when-paused")) {
                     this.ui.get("label").visible = true;
                     this._updateText(metadata, shouldRestart);
@@ -243,12 +312,18 @@ const SpTrayButton = GObject.registerClass(
             }
         }
 
-        showPlaying(metadata, shouldRestart = false) {
-            this.visible = true;
-            this.ui.get("label").visible = true;
-            const pbStat = this.ui.get("pausedState");
-            pbStat.visible = false;
-            this._updateText(metadata, shouldRestart);
+        showStopped() {
+            if (this.settings.get_boolean("hidden-when-stopped")) {
+                this.visible = false;
+            } else {
+                this.visible = true;
+                const pbStat = this.ui.get("pausedState");
+                pbStat.visible = true;
+                pbStat.icon_name = "media-playback-stop-symbolic";
+                const button = this.ui.get("label");
+                button.visible = false;
+            }
+            this._stopMarquee();
         }
 
         _updateText(metadata, shouldRestart = false) {
@@ -260,54 +335,6 @@ const SpTrayButton = GObject.registerClass(
                 return;
             }
             button.set_text(this._makeText(metadata, shouldRestart));
-        }
-
-        showInactive() {
-            if (this.settings.get_boolean("hidden-when-inactive")) {
-                this.visible = false;
-            } else {
-                this.visible = true;
-                const pbStat = this.ui.get("pausedState");
-                pbStat.visible = true;
-                pbStat.text = this.settings.get_string("off");
-                const button = this.ui.get("label");
-                button.visible = false;
-            }
-            this._stopMarquee();
-        }
-
-        showStopped() {
-            if (this.settings.get_boolean("hidden-when-stopped")) {
-                this.visible = false;
-            } else {
-                this.visible = true;
-                const pbStat = this.ui.get("pausedState");
-                pbStat.visible = true;
-                pbStat.text = this.settings.get_string("stopped");
-                const button = this.ui.get("label");
-                button.visible = false;
-            }
-            this._stopMarquee();
-        }
-
-        // update the text on the tray display
-        updateLabel(shouldRestart = true) {
-            if (!this.dbus.spotifyIsActive()) {
-                this.showInactive();
-                return;
-            }
-            switch (this.dbus.getPlaybackStatus()) {
-                case "Playing":
-                    this.showPlaying(this.dbus.extractMetadataInformation(), shouldRestart);
-                    return;
-                case "Paused":
-                    this.showPaused(this.dbus.extractMetadataInformation(), shouldRestart);
-                    return;
-                case "Stopped":
-                default:
-                    this.showStopped();
-                    return;
-            }
         }
 
         _getFormat(trackType) {
@@ -344,26 +371,43 @@ const SpTrayButton = GObject.registerClass(
                 this.marqueeGenerator = marqueeTextGenerator.apply(this, [text]);
             }
             this._setMarqueeStyle(Math.min(text.length, marqueeLength));
+            const counter = {
+                value: (text.length + this.settings.get_string("marquee-tail").length) * this.settings.get_int("marquee-repeats") - this.settings.get_string("marquee-tail").length,
+                sub: function () { this.value--; }
+            };
             this.marqueeTimeoutId = GLib.timeout_add(
                 GLib.PRIORITY_DEFAULT,
                 this.settings.get_int("marquee-interval"),
-                () => this.paintNextMarqueeFrame(),
+                () => this.paintNextMarqueeFrame(counter),
+                null
             );
             return this.marqueeGenerator.next().value;
         }
 
-        paintNextMarqueeFrame() {
+        _setMarqueeStyle(length) {
+            this.ui.get("label").set_style(`width: ${length / 2}em;`);
+        }
+
+        paintNextMarqueeFrame(counter) {
+            if (counter.value <= 0) {
+                this._stopMarquee();
+                return GLib.SOURCE_REMOVE;
+            }
             this.ui.get("label").set_text(this.marqueeGenerator.next().value);
+            counter.sub();
             return GLib.SOURCE_CONTINUE;
         }
 
-        _createFormattedText(metadata) {
-            return this._getFormat(metadata.trackType)
-                .replace("{artist}", metadata.artist)
-                .replace("{track}", metadata.title)
-                .replace("{album}", metadata.album)
-                .replace("{pbctr}", this.getPlaybackControl())
-                .trim();
+        _pauseMarquee() {
+            if (this.marqueeTimeoutId != null) {
+                GLib.Source.remove(this.marqueeTimeoutId);
+                this.marqueeTimeoutId = null;
+            }
+        }
+
+        _stopMarquee() {
+            this._pauseMarquee();
+            this.marqueeGenerator = null;
         }
 
         _generateStaticText(metadata) {
@@ -389,26 +433,12 @@ const SpTrayButton = GObject.registerClass(
             return this._createFormattedText(metadata);
         }
 
-        getPlaybackControl() {
-            const controls = this.dbus.getPlaybackControl();
-            let text = "";
-            if (!controls) {
-                return text;
-            }
-            if (controls.shuffle) {
-                text += `${this.settings.get_string("shuffle")} `;
-            }
-            switch (controls.loop) {
-                case "Playlist":
-                    text += `${this.settings.get_string("loop-playlist")} `;
-                    break;
-                case "Track":
-                    text += `${this.settings.get_string("loop-track")} `;
-                    break;
-                default:
-                    break;
-            }
-            return text;
+        _createFormattedText(metadata) {
+            return this._getFormat(metadata.trackType)
+                .replace("{artist}", metadata.artist)
+                .replace("{track}", metadata.title)
+                .replace("{album}", metadata.album)
+                .trim();
         }
 
         // many thanks to mheine's implementation
@@ -425,7 +455,7 @@ const SpTrayButton = GObject.registerClass(
                 let wins = global.get_window_actors(); // get all open windows
                 for (let win of wins) {
                     if (typeof win.get_meta_window === "function") {
-                        if (win.get_meta_window().get_wm_class() === "Spotify") {
+                        if (win.get_meta_window().get_wm_class() === "spotify") {
                             this._spotiWin = win.get_meta_window(); // mark the spotify window
                         } else if (win.get_meta_window().has_focus()) {
                             this._notSpotify = win.get_meta_window(); // mark the window that was active when the button was pressed
@@ -440,16 +470,19 @@ const SpTrayButton = GObject.registerClass(
             }
         }
 
-        _pauseMarquee() {
-            if (this.marqueeTimeoutId != null) {
-                GLib.Source.remove(this.marqueeTimeoutId);
-                this.marqueeTimeoutId = null;
-            }
-        }
-
-        _stopMarquee() {
-            this._pauseMarquee();
-            this.marqueeGenerator = null;
+        destroy() {
+            // disconnect all signals
+            this._settingSignals.forEach((signal) => {
+                this.settings.disconnect(signal);
+            });
+            this._signals.forEach((signal) => {
+                this.disconnect(signal);
+            });
+            // destroy all ui elements
+            this.ui.get("box").destroy();
+            this.dbus.destroy();
+            if (this.marqueeTimeoutId) GLib.Source.remove(this.marqueeTimeoutId);
+            super.destroy();
         }
     },
 );
